@@ -1,0 +1,687 @@
+Recipe 13: Creating and Deploying a Simple Infrastructure using Terraform
+Objective
+Deploy a simple AWS resource using Terraform.
+Assignment Task
+Create an AWS S3 bucket using Terraform.
+Guidelines / Steps
+1. Create a Terraform project directory.
+2. Define the AWS provider configuration.
+3. Define a resource block to create an S3 bucket.
+4. Run:
+terraform init
+5. Generate an execution plan:
+terraform plan
+6. Apply the configuration:
+terraform apply
+7. Verify in the AWS Console that the bucket is created.
+8. Destroy the resource using:
+terraform destroy
+Expected Outcome
+
+answer---
+1.mkdir terraform-s3
+2.cd terraform-s3
+3.notepad main.tf
+
+# Configure AWS Provider
+provider "aws" {
+  region = "ap-south-1"   # Mumbai region
+}
+
+# Create S3 Bucket
+resource "aws_s3_bucket" "my_bucket" {
+  bucket = "rutvik-terraform-bucket-12345"   # Change this (must be unique)
+
+  tags = {
+    Name        = "MyTerraformBucket"
+    Environment = "Dev"
+  }
+}
+4.terraform init && terraform plan && terraform apply
+5.GO to aws consou->s3-> see the bucket name ;
+________________________________________________________
+
+Recipe 14: Managing Terraform State in a Team
+Objective
+Learn how Terraform state is managed for collaboration.
+Assignment Task
+Configure remote state storage using AWS S3.
+Guidelines / Steps
+1. Create an S3 bucket to store Terraform state.
+2. Enable versioning for the bucket.
+3. Update Terraform configuration to use a remote backend.
+4. Configure backend settings in Terraform.
+5. Reinitialize Terraform:
+terraform init
+6. Verify state file is stored in S3.
+7. Simulate a team workflow:
+o Clone the project in another directory
+o Run Terraform commands using the same backend.
+Expected Outcome
+Terraform state should be stored remotely and accessible to multiple users.
+
+answer--
+1.mkdir terraform-remote-state
+ 2.cd terraform-remote-state
+3. notepad backend.tf
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+# Create S3 bucket for Terraform state
+resource "aws_s3_bucket" "state_bucket" {
+  bucket = "rutvik-terraform-state-12345"   # change to unique name
+
+  tags = {
+    Name = "TerraformStateBucket"
+  }
+}
+
+# Enable versioning
+resource "aws_s3_bucket_versioning" "versioning" {
+  bucket = aws_s3_bucket.state_bucket.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+4.terraform init && terraform plan && terraform apply
+5.GO to aws consou->s3-> see the bucket name ;
+________________________________________________________
+
+Recipe 15: Provisioning a Virtual Machine using Terraform
+Objective
+Launch an EC2 instance using Terraform.
+Assignment Task
+Create an AWS EC2 instance.
+Guidelines / Steps
+1. Create a Terraform configuration file.
+2. Define the AWS provider.
+3. Define an EC2 resource block.
+4. Specify:
+o AMI ID
+o Instance type
+o Key pair
+5. Run:
+terraform init
+6. Run:
+terraform plan
+7. Deploy the infrastructure:
+terraform apply
+8. Verify instance creation in AWS Console.
+9. Terminate the instance using Terraform.
+Expected Outcome
+A running EC2 instance managed by Terraform.
+
+
+1.mkdir terraform-ec2
+2.cd terraform-ec2
+3.notepad main.tf
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_instance" "my_ec2" {
+  ami           = "ami-0f58b397bc5c1f2e8"
+  instance_type = "t3.micro"
+
+  key_name = "my-keypair"  
+  tags = {
+    Name = "Terraform-EC2"
+  }
+}
+
+4.create an =EC2 → Key Pairs → Create Key Pair
+5.terraform init && terraform plan && terraform apply
+6.GO to aws consou->EC2 → Instances
+
+------------------------------------------------------------
+Recipe 16: Provisioning a Web Server using Terraform
+Objective
+Deploy a web server on an EC2 instance.
+Assignment Task
+
+Create an EC2 instance and configure Apache or Nginx web server.
+Guidelines / Steps
+1. Create Terraform configuration for EC2.
+2. Configure Security Groups to allow:
+o SSH (port 22)
+o HTTP (port 80)
+3. Add user_data script to install a web server.
+4. Initialize Terraform.
+5. Deploy the infrastructure.
+6. Obtain the public IP address of the instance.
+7. Access the web server using a browser.
+Expected Outcome
+A working web server accessible through a public IP.
+
+
+1.mkdir terraform-webserver
+2.cd terraform-webserver
+3.notepad main.tf
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_security_group" "web_sg" {
+  name        = "web-sg"
+  description = "Allow SSH and HTTP"
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "web_server" {
+  ami           = "ami-0f58b397bc5c1f2e8"   # Amazon Linux 2
+  instance_type = "t3.micro"
+  key_name      = "my-keypair"   # must exist
+
+  security_groups = [aws_security_group.web_sg.name]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install httpd -y
+              systemctl start httpd
+              systemctl enable httpd
+              echo "<h1>Welcome to Terraform Web Server</h1>" > /var/www/html/index.html
+              EOF
+
+  tags = {
+    Name = "Terraform-WebServer"
+  }
+}
+
+4.create an =EC2 → Key Pairs → Create Key Pair
+5.terraform init && terraform plan && terraform apply
+6.aws->ec2->instance->then ip addresh
+-------------------------------------------------------------
+Recipe 17: Provisioning a Database using Terraform
+Objective
+Deploy a managed database using AWS.
+Assignment Task
+Create an Amazon RDS database instance.
+Guidelines / Steps
+1. Define the AWS provider.
+2. Create a Terraform resource for RDS instance.
+3. Configure parameters:
+o Database engine
+o Instance class
+o Storage
+o Username and password
+4. Configure security groups for database access.
+5. Initialize Terraform.
+6. Deploy the infrastructure.
+7. Verify database creation in AWS.
+Expected Outcome
+A running RDS database instance.
+
+mkdir terraform-rds
+cd terraform-rds
+notepad main.tf
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_security_group" "rds_sg" {
+  name        = "rds-sg"
+  description = "Allow MySQL access"
+
+  ingress {
+    description = "MySQL"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]   # for testing only (not secure)
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_db_instance" "my_rds" {
+  identifier        = "terraform-db"
+  engine            = "mysql"
+  instance_class    = "db.t3.micro"
+  allocated_storage = 20
+
+  username = "admin"
+  password = "Admin1234!"   # change this
+
+  publicly_accessible = true
+  skip_final_snapshot = true
+
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+
+  tags = {
+    Name = "Terraform-RDS"
+  }
+}
+
+4.create an =EC2 → Key Pairs → Create Key Pair
+5.terraform init && terraform plan && terraform apply
+6.aws->→ RDS → Databases
+-----------------------------------------------------------------
+Recipe 18: Deploying a Web Application using Terraform
+Objective
+Deploy a simple web application architecture.
+Assignment Task
+Deploy a web application using EC2 and RDS.
+Guidelines / Steps
+1. Create a VPC (optional but recommended).
+2. Create:
+o EC2 instance (web server)
+o RDS instance (database)
+3. Configure security groups to allow communication.
+4. Add user data to configure the application environment.
+5. Deploy using Terraform.
+
+6. Verify connectivity between web server and database.
+Expected Outcome
+A functional web application infrastructure.
+
+mkdir terraform-webapp
+cd terraform-webapp
+notepad main.tf
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_security_group" "web_sg" {
+  name = "web-sg"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "rds_sg" {
+  name = "rds-sg"
+
+  ingress {
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_db_instance" "db" {
+  identifier        = "webapp-db"
+  engine            = "mysql"
+  instance_class    = "db.t3.micro"
+  allocated_storage = 20
+
+  username = "admin"
+  password = "Admin1234!"
+
+  publicly_accessible = true
+  skip_final_snapshot = true
+
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
+
+  tags = {
+    Name = "WebApp-DB"
+  }
+}
+
+
+resource "aws_instance" "web" {
+  ami           = "ami-0f58b397bc5c1f2e8"
+  instance_type = "t3.micro"
+  key_name      = "my-keypair"
+
+  security_groups = [aws_security_group.web_sg.name]
+
+  user_data = <<-EOF
+              #!/bin/bash
+              yum update -y
+              yum install httpd mysql -y
+              systemctl start httpd
+              systemctl enable httpd
+
+              echo "<h1>Web Server Connected to RDS</h1>" > /var/www/html/index.html
+              EOF
+
+  tags = {
+    Name = "WebApp-Server"
+  }
+}
+
+4.create an =EC2 → Key Pairs → Create Key Pair
+5.terraform init && terraform plan && terraform apply
+6.aws-> EC2 → Copy Public IP
+
+-----------------------------------------------------------------
+Recipe 19: Managing Infrastructure Changes using Terraform
+Objective
+Understand how Terraform tracks and applies infrastructure changes.
+Assignment Task
+Modify an existing infrastructure resource.
+Guidelines / Steps
+1. Use an existing Terraform project.
+2. Change configuration parameters such as:
+o EC2 instance type
+o Tags
+3. Run:
+terraform plan
+4. Observe proposed changes.
+5. Apply the changes:
+terraform apply
+6. Verify updates in AWS Console.
+Expected Outcome
+Infrastructure should update without manual intervention.
+
+mkdir terraform-webapp
+cd terraform-ec2
+notepad main.tf
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_instance" "my_ec2" {
+  ami           = "ami-0f58b397bc5c1f2e8"
+  instance_type = "t2.micro"
+
+  key_name = "my-keypair"
+
+  tags = {
+    Name = "Old-EC2"
+  }
+}
+5.terraform init && terraform plan && terraform apply
+6.aws-> EC2 →Instances
+--------------------------------------------------------
+Recipe 20: Using Terraform to Configure Load Balancers
+Objective
+Deploy an AWS load balancer.
+Assignment Task
+Create an Application Load Balancer (ALB) to distribute traffic across EC2 instances.
+Guidelines / Steps
+1. Create multiple EC2 instances.
+2. Define a load balancer resource.
+3. Create:
+o Target groups
+o Listener configuration
+4. Attach EC2 instances to the target group.
+5. Deploy infrastructure.
+6. Test load balancing using browser requests.
+Expected Outcome
+Traffic should be distributed across multiple instances.
+
+provider "aws" {
+    region = "ap-south-1"
+}
+
+
+
+resource "aws_security_group" "lb_sg" {
+    name = "lb-security-group"
+
+    ingress {
+        from_port   = 80
+        to_port     = 80
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    ingress {
+        from_port   = 22
+        to_port     = 22
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    egress {
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+}
+
+
+data "aws_vpc" "default" {
+    default = true
+}
+
+data "aws_subnets" "default" {}
+
+
+resource "aws_instance"  "server1" {
+    ami             = "ami-048f4445314bcaa09"
+    instance_type   = "t3.micro"
+    key_name        = "load-balancer-key"
+
+    security_groups = [aws_security_group.lb_sg.name]
+
+    user_data   =   <<-EOF
+                    #!/bin/bash
+                    yum update  -y
+                    yum install httpd -y 
+                    echo "Server 1 Running" > /var/www/html/index.html
+                    systemctl start httpd
+                    systemctl enable httpd
+                    EOF
+    
+    tags = {
+        Name = "Server-1"
+    }
+}
+
+resource "aws_instance"  "server2" {
+    ami             = "ami-048f4445314bcaa09"
+    instance_type   = "t3.micro"
+    key_name        = "load-balancer-key"
+
+    security_groups = [aws_security_group.lb_sg.name]
+
+    user_data   =   <<-EOF
+                    #!/bin/bash
+                    yum update  -y
+                    yum install httpd -y 
+                    echo "Server 2 Running" > /var/www/html/index.html
+                    systemctl start httpd
+                    systemctl enable httpd
+                    EOF
+    
+    tags = {
+        Name = "Server-2"
+    }
+}
+
+resource "aws_lb" "my_lb" {
+    name                = "my-load-balancer"
+    internal            = false
+    load_balancer_type  = "application"
+
+    security_groups = [aws_security_group.lb_sg.id]
+    subnets         = data.aws_subnets.default.ids
+
+    tags = {
+        Name = "My_Load_Balancer"
+    }
+}
+
+
+resource "aws_lb_target_group" "tg" {
+    name        = "my-target-group"
+    port        = 80
+    protocol    = "HTTP"
+    vpc_id      = data.aws_vpc.default.id
+
+    health_check {
+        path    = "/"
+        port    = "80"
+    }
+
+    tags = {
+        Name = "Target-Group"
+    }
+}
+
+
+resource "aws_lb_target_group_attachment" "server1_attach" {
+
+    target_group_arn    = aws_lb_target_group.tg.arn
+    target_id           = aws_instance.server1.id
+    port                = 80
+}
+
+resource "aws_lb_target_group_attachment" "server2_attach" {
+
+    target_group_arn    = aws_lb_target_group.tg.arn
+    target_id           = aws_instance.server2.id
+    port                = 80
+}
+resource "aws_lb_listener" "listener" {
+
+    load_balancer_arn   = aws_lb.my_lb.arn
+    port                = 80
+    protocol            = "HTTP"
+
+    default_action {
+        type                = "forward"
+        target_group_arn    = aws_lb_target_group.tg.arn
+    }
+}
+
+output "load_balancer_dns" {
+    value = aws_lb.my_lb.dns_name
+}
+--------------------------------------------------------------
+
+Recipe 21: Managing Infrastructure Dependencies with Terraform
+Objective
+Understand resource dependencies in Terraform.
+Assignment Task
+Create infrastructure with dependent resources.
+Guidelines / Steps
+1. Create resources such as:
+
+o VPC
+o Subnet
+o EC2 instance
+2. Use implicit or explicit dependencies.
+3. Configure Terraform resource relationships.
+4. Run:
+terraform plan
+5. Apply configuration.
+6. Verify creation order of resources.
+Expected Outcome
+Resources should be created in the correct order.
+
+1.mkdir terraform-dependency
+2.cd terraform-dependency
+3.notepad main.tf
+
+provider "aws" {
+  region = "ap-south-1"
+}
+
+resource "aws_vpc" "my_vpc" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "MyVPC"
+  }
+}
+
+resource "aws_subnet" "my_subnet" {
+  vpc_id            = aws_vpc.my_vpc.id   # implicit dependency
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "ap-south-1a"
+
+  tags = {
+    Name = "MySubnet"
+  }
+}
+
+resource "aws_security_group" "sg" {
+  name   = "my-sg"
+  vpc_id = aws_vpc.my_vpc.id   # implicit dependency
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "my_ec2" {
+  ami           = "ami-0f58b397bc5c1f2e8"
+  instance_type = "t3.micro"
+
+  subnet_id              = aws_subnet.my_subnet.id
+  vpc_security_group_ids = [aws_security_group.sg.id]
+
+  key_name = "my-keypair"
+
+  tags = {
+    Name = "Dependency-EC2"
+  }
+}
+
+
+
+
+
+
+
+
